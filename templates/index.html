@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskBoard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div>
+                <p class="eyebrow">FastAPI + PostgreSQL</p>
+                <h1>TaskBoard</h1>
+                <p class="subtitle">A compact учебный трекер задач для студентов DevOps.</p>
+            </div>
+            <a class="api-link" href="/docs">OpenAPI Docs</a>
+        </section>
+
+        <section class="panel">
+            <h2>Create Task</h2>
+            <form action="/tasks" method="post" class="task-form">
+                <label>
+                    Title
+                    <input type="text" name="title" placeholder="Prepare CI/CD lab" required maxlength="200">
+                </label>
+                <label>
+                    Description
+                    <textarea name="description" rows="4" placeholder="Add details, deadline, or acceptance criteria"></textarea>
+                </label>
+                <button type="submit">Create task</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="section-header">
+                <h2>Task List</h2>
+                <span class="badge">{{ tasks|length }} total</span>
+            </div>
+
+            {% if tasks %}
+                <div class="task-grid">
+                    {% for task in tasks %}
+                        <article class="task-card status-{{ task.status.value }}">
+                            <div class="task-card-header">
+                                <div>
+                                    <h3>{{ task.title }}</h3>
+                                    <p class="meta">#{{ task.id }} · {{ task.created_at.strftime("%Y-%m-%d %H:%M") }}</p>
+                                </div>
+                                <span class="status-pill">{{ task.status.value }}</span>
+                            </div>
+
+                            <p class="description">
+                                {{ task.description if task.description else "No description provided." }}
+                            </p>
+
+                            <form action="/tasks/{{ task.id }}/status" method="post" class="inline-form">
+                                <select name="status" aria-label="Update status for task {{ task.id }}">
+                                    {% for status in statuses %}
+                                        <option value="{{ status }}" {% if status == task.status.value %}selected{% endif %}>
+                                            {{ status }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit">Update</button>
+                            </form>
+
+                            <div class="actions">
+                                <a href="/tasks/{{ task.id }}/edit">Edit</a>
+                                <form action="/tasks/{{ task.id }}/delete" method="post">
+                                    <button type="submit" class="danger">Delete</button>
+                                </form>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>No tasks yet. Create the first one to start your board.</p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

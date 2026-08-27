@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Task · TaskBoard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="page narrow">
+        <section class="panel">
+            <div class="section-header">
+                <h1>Edit Task #{{ task.id }}</h1>
+                <a class="api-link" href="/">Back to board</a>
+            </div>
+
+            <form action="/tasks/{{ task.id }}/edit" method="post" class="task-form">
+                <label>
+                    Title
+                    <input type="text" name="title" value="{{ task.title }}" required maxlength="200">
+                </label>
+                <label>
+                    Description
+                    <textarea name="description" rows="6">{{ task.description }}</textarea>
+                </label>
+                <label>
+                    Status
+                    <select name="status">
+                        {% for status in statuses %}
+                            <option value="{{ status }}" {% if status == task.status.value %}selected{% endif %}>
+                                {{ status }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <div class="actions">
+                    <button type="submit">Save changes</button>
+                    <a href="/">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+</html>
