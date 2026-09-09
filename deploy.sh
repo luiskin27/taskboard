@@ -39,6 +39,14 @@ echo "=== [4/7] Установка Python-зависимостей ==="
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r requirements.txt
 
+echo "=== [5/7] Подготовка PostgreSQL ==="
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
 
+# Создание пользователя и БД без ошибок при повторном запуске
+sudo -u postgres psql -c "DO \$DO\$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE $DB_USER WITH LOGIN PASSWORD '$DB_PASSWORD'; END IF; END \$DO\$;"
+sudo -u postgres psql -c "DO \$DO\$ BEGIN IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME') THEN CREATE DATABASE $DB_NAME OWNER $DB_USER; END IF; END \$DO\$;"
+
+export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME"
 
 
