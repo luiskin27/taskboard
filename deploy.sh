@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+# перемениые
 APP_NAME="TaskBoard"
 APP_DIR="taskboard"
 REPOSITORY_URL="https://github.com/sharton/taskboard"
@@ -9,18 +10,18 @@ DB_USER="taskboard"
 DB_PASSWORD="taskboard"
 APP_PORT="8000"
 
-echo "=== [1/7] Проверка системных пакетов ==="
-REQUIRED_PKG="git python3 python3-pip python3-venv postgresql postgresql-contrib curl"
+# проверям пакети
+REQUIRED_PKGS="git python3 python3-pip python3-venv postgresql postgresql-contrib curl"
 
-for pkg in $REQUIRED_PKG; do
+for pkg in $REQUIRED_PKGS; do
     if ! dpkg -l | grep -q "^ii  $pkg "; then
-        echo "становка отсутствующего пакета: $pkg"
-        sudo apt-get update -y && sudo apt-get install -y $pkg
+        echo "ставим $pkg"
+        sudo apt-get update -y
+        sudo apt-get install -y $pkg
     fi
 done
 
-
-echo "=== [2/7] Проверка исходного кода ==="
+# качаем код если папки нету
 if [ ! -f "requirements.txt" ]; then
     if [ ! -d "$APP_DIR" ]; then
         git clone "$REPOSITORY_URL" "$APP_DIR"
@@ -30,27 +31,25 @@ if [ ! -f "requirements.txt" ]; then
     fi
 fi
 
-echo "=== [3/7] Создание виртуального окружения ==="
+# создам венв
 if [ ! -d ".venv" ]; then
     python3 -m venv .venv
 fi
 
-echo "=== [4/7] Установка Python-зависимостей ==="
+# ставим зависимомти
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r requirements.txt
 
-echo "=== [5/7] Подготовка PostgreSQL ==="
+# настраеваем базу и юзера
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 
-# Создание пользователя и БД без ошибок при повторном запуске
-sudo -u postgres psql -c "DO \$DO\$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE $DB_USER WITH LOGIN PASSWORD '$DB_PASSWORD'; END IF; END \$DO\$;"
+sudo -u postgres psql -c "DO \$DO\$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE $DB_USER WITH LOGIN PASSWORD '$DB_PASSWORD' LOGIN; END IF; END \$DO\$;"
 sudo -u postgres psql -c "DO \$DO\$ BEGIN IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME') THEN CREATE DATABASE $DB_NAME OWNER $DB_USER; END IF; END \$DO\$;"
 
 export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME"
 
-
-echo "=== [6/7] Запуск FastAPI ==="
+# запуск ювикорна
 if pgrep -f "uvicorn.*$APP_PORT" > /dev/null; then
     pkill -f "uvicorn.*$APP_PORT" || true
     sleep 2
@@ -59,7 +58,7 @@ fi
 nohup .venv/bin/uvicorn main:app --host 0.0.0.0 --port $APP_PORT > app.log 2>&1 &
 sleep 3
 
-echo "=== [7/7] Проверка доступности ==="
+# проверям хелсчек
 HEALTH_URL="http://localhost:$APP_PORT/api/health"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
 
@@ -68,7 +67,7 @@ if [ "$RESPONSE" = "200" ]; then
     echo "Application is available at: http://localhost:$APP_PORT"
     exit 0
 else
-    echo "Ошибка запуска приложения. Код ответа: $RESPONSE"
-    echo "Проверьте app.log"
+    echo "ошибка запуска"
+    cat app.log
     exit 1
 fi
