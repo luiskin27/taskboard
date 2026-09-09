@@ -50,3 +50,25 @@ sudo -u postgres psql -c "DO \$DO\$ BEGIN IF NOT EXISTS (SELECT FROM pg_database
 export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME"
 
 
+echo "=== [6/7] Запуск FastAPI ==="
+if pgrep -f "uvicorn.*$APP_PORT" > /dev/null; then
+    pkill -f "uvicorn.*$APP_PORT" || true
+    sleep 2
+fi
+
+nohup .venv/bin/uvicorn main:app --host 0.0.0.0 --port $APP_PORT > app.log 2>&1 &
+sleep 3
+
+echo "=== [7/7] Проверка доступности ==="
+HEALTH_URL="http://localhost:$APP_PORT/api/health"
+RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+
+if [ "$RESPONSE" = "200" ]; then
+    echo "Application deployed successfully."
+    echo "Application is available at: http://localhost:$APP_PORT"
+    exit 0
+else
+    echo "Ошибка запуска приложения. Код ответа: $RESPONSE"
+    echo "Проверьте app.log"
+    exit 1
+fi
